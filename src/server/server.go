@@ -46,11 +46,9 @@ func (this *Server) ListenMessager() {
 func (this *Server) Handler(conn net.Conn) {
 	// 当前连接的业务
 	// 用户上线将用户加入到onlineMap中
-	this.maplock.Lock()
-	user := NewUser(conn)
-	this.OnlineMap[user.Name] = user
-	this.maplock.Unlock()
-	this.BroadCast(user, "已上线")
+	user := NewUser(conn, this)
+
+	user.Online()
 
 	go func() {
 		buf := make([]byte, 4096)
@@ -62,14 +60,14 @@ func (this *Server) Handler(conn net.Conn) {
 				return
 			}
 			if read == 0 {
-				this.BroadCast(user, "下线")
+				user.Offline()
 				return
 			}
 
 			msg := string(buf[:read-1])
 
 			// 将得到的消息进行广播
-			this.BroadCast(user, msg)
+			user.DoMessage(msg)
 		}
 	}()
 
